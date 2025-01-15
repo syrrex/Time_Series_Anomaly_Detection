@@ -11,14 +11,15 @@ def main(input_file):
     output_file = "predictions_group_18.csv"
 
     # Load pre-trained models
-    encoder = load_model('encoder_model.keras')
-    with open('gmm_model.pkl', 'rb') as file:
-        gmm = pickle.load(file)
+    knn_model = joblib.load('knn_model.joblib')
+    scaler = joblib.load('scaler.joblib') if joblib.os.path.exists('scaler.joblib') else None
 
-    scores = apply_anomaly_detection(input_file, encoder, gmm, window_size)
-
+    window_size = 350
+    threshold_factor = 3.5
+    scores = apply_anomaly_detection(input_file, knn_model, scaler, window_size, threshold_factor)
+    smoothed_scores = smooth_anomaly_scores(scores, window_size)
     # Save scores to CSV
-    scores_df = pd.DataFrame(scores)
+    scores_df = pd.DataFrame(smoothed_scores)
     scores_df.to_csv(output_file, index=False, header=False)
     print(f"Anomaly scores saved to {output_file}")
 
