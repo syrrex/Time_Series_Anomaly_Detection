@@ -28,7 +28,7 @@ def visualize_test_data(data, labels, title="Test Data with Anomalies"):
 
 def visualize_detected_anomalies(data, labels, scores, threshold=0.5, title="Detected Anomalies"):
     """
-    Visualize the detected anomalies in the test data.
+    Visualize the detected anomalies in the test data with improved clarity.
 
     Parameters:
         data (numpy array): Time series data.
@@ -37,28 +37,42 @@ def visualize_detected_anomalies(data, labels, scores, threshold=0.5, title="Det
         threshold (float): Threshold to classify anomalies based on scores.
         title (str): Title of the plot.
     """
-    plt.figure(figsize=(12, 6))
-    plt.plot(data, label="Time Series Data", color='blue')
+    plt.figure(figsize=(14, 7))
 
-    # Detected anomalies (predicted anomalies)
+    # Plot the time series data
+    plt.plot(data, label="Time Series Data", color='blue', linewidth=1, zorder=1)
+
+    # Detected anomalies
     detected_anomalies = np.where(scores > threshold)[0]
-    plt.scatter(detected_anomalies, data[detected_anomalies], color='orange', label="Detected Anomalies", zorder=3)
-
-    # True anomalies (from ground truth)
-    true_anomalies = np.where(labels == 1)[0]
-    plt.scatter(true_anomalies, data[true_anomalies], color='red', label="True Anomalies", zorder=4)
+    plt.scatter(detected_anomalies, data[detected_anomalies], color='orange', s=10, label="Detected Anomalies", zorder=3)
 
     # Missed anomalies
+    true_anomalies = np.where(labels == 1)[0]
     missed_anomalies = np.setdiff1d(true_anomalies, detected_anomalies)
     if len(missed_anomalies) > 0:
-        plt.scatter(missed_anomalies, data[missed_anomalies], color='purple', label="Missed Anomalies", zorder=5)
+        plt.scatter(missed_anomalies, data[missed_anomalies], color='green', s=15, label="Missed Anomalies", zorder=4)
 
+    # Add darker shaded regions for true anomaly areas
+    for start in np.where(np.diff(labels, prepend=0) == 1)[0]:
+        end = np.where(np.diff(labels, append=0) == -1)[0]
+        end = end[end > start][0] if len(end[end > start]) > 0 else len(labels)
+        plt.axvspan(start, end, color='red', alpha=0.3, label="True Anomaly Region", zorder=0)
+
+    # Ensure the "True Anomaly Region" is only in the legend once
+    handles, labels = plt.gca().get_legend_handles_labels()
+    by_label = dict(zip(labels, handles))
+    plt.legend(by_label.values(), by_label.keys())
+
+    # Add legend and labels
     plt.title(title)
     plt.xlabel("Time")
     plt.ylabel("Value")
-    plt.legend()
-    plt.grid()
+    plt.grid(True)
+    plt.tight_layout()
     plt.show()
+
+
+
 
 
 

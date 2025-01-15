@@ -1,69 +1,70 @@
 import numpy as np
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.neighbors import NearestNeighbors
+import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from sklearn.mixture import GaussianMixture
-from keras.models import Model
-from keras.layers import Input, LSTM, Dense
-from pate.PATE_metric import PATE
-import pickle
-from tensorflow.keras.models import load_model
+import joblib
+import os
 
-# TODO: Our base model is this:
-# window_size = 350
-# LSTM 64 units, Dense 32 units, output_layer = Dense(window_size, activation='linear')
-# Also try different parameters for this as well as the GMM.
-# batch_size and epochs can be tuned as well.
-
-file_path = "X_train.csv"
-window_size = 350
+file_path = 'X_train.csv'
 
 
-def load_and_normalize_data(file_path):
-    data = pd.read_csv(file_path, header=None).iloc[:, 0].values
-    mean = np.mean(data)
-    std_dev = np.std(data)
-    normalized_data = (data - mean) / std_dev
-    return normalized_data, mean, std_dev
+def train_model(time_series, window_size=10, k=5):
+    # Normalize the data
+    scaler = MinMaxScaler()
+    time_series = scaler.fit_transform(time_series.reshape(-1, 1)).flatten()
+
+    # Create sliding windows
+    windows = []
+    for i in range(len(time_series) - window_size + 1):
+        windows.append(time_series[i:i + window_size])
+    windows = np.array(windows)
+
+    # Train KNN model
+    knn = NearestNeighbors(n_neighbors=k, algorithm='auto')
+    knn.fit(windows)
+
+    # Compute distances to k-nearest neighbors
+    distances, _ = knn.kneighbors(windows)
+    baseline_distances = np.mean(distances, axis=1)
+
+    return knn, baseline_distances, scaler
 
 
-def create_windows(data, window_size):
-    return np.array([data[i:i + window_size] for i in range(len(data) - window_size + 1)])
+if __name__ == '__main__':
+    # Path to your CSV file
+    file_path = 'X_train.csv'
 
+    # Load the time series data
+    time_series = pd.read_csv(file_path, header=None).values.flatten()
 
-def train_model(data, window_size, LSTM_units=64, Dense_units=32, GMM_components=2, epochs=20, batch_size=32):
-    train_windows = create_windows(data, window_size).reshape(-1, window_size, 1)
+    # Parameters for the most stable model found in with grid search
+    window_size = 350
+    k = 3
 
-    # Define LSTM Encoder
-    input_layer = Input(shape=(window_size, 1))
-    lstm_out = LSTM(LSTM_units, return_sequences=False)(input_layer)
-    dense_out = Dense(Dense_units, activation='relu')(lstm_out)
-    output_layer = Dense(window_size, activation='linear')(dense_out)
+    # Train the K-Nearest Windows model
+    knn_model, baseline_distances, scaler = train_model(
+        time_series,
+        window_size=window_size,
+        k=k,
+    )
 
-    model = Model(inputs=input_layer, outputs=output_layer)
-    model.compile(optimizer='adam', loss='mse')
+    # Output results
+    print("Model trained successfully!")
+    # Save the model and scaler
+    model_path = 'knn_model.joblib'
+    scaler_path = 'scaler.joblib'
+    baseline_path = 'baseline_distances.npy'
 
-    # Train the model
-    model.fit(train_windows, train_windows, epochs=epochs, batch_size=batch_size, verbose=1)
+    # Save the KNN model
+    joblib.dump(knn_model, model_path)
+    print(f"Model saved to {model_path}")
 
-    # Extract latent features using the encoder part
-    encoder = Model(inputs=input_layer, outputs=dense_out)
-    latent_features = encoder.predict(train_windows)
+    # Save the scaler
+    if scaler:
+        joblib.dump(scaler, scaler_path)
+        print(f"Scaler saved to {scaler_path}")
 
-    # Train GMM
-    gmm = GaussianMixture(n_components=GMM_components, covariance_type='full', random_state=42)
-    gmm.fit(latent_features)
-
-    return encoder, gmm
-
-
-if __name__ == "__main__":
-    # Load and normalize data
-    normalized_data, mean, std_dev = load_and_normalize_data(file_path)
-
-    # Train the model
-    encoder, gmm = train_model(normalized_data, window_size)
-
-    # Save models
-    encoder.save('encoder_model.keras')
-    with open('gmm_model.pkl', 'wb') as file:
-        pickle.dump(gmm, file)
+    # Save the baseline distances
+    np.save(baseline_path, baseline_distances)
+    print(f"Baseline distances saved to {baseline_path}")
