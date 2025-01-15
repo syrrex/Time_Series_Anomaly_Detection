@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 def visualize_test_data(data, labels, title="Test Data with Anomalies"):
     """
@@ -57,4 +58,39 @@ def visualize_detected_anomalies(data, labels, scores, threshold=0.5, title="Det
     plt.ylabel("Value")
     plt.legend()
     plt.grid()
+    plt.show()
+
+
+
+def visualize_anomalies(file_path, labels):
+    """
+    Visualizes the time series data from the file and highlights anomalies.
+
+    Parameters:
+        file_path (str): Path to the CSV file containing time series data.
+        labels (numpy array): Array indicating normal (0) and anomalous (1) points.
+    """
+    # Load the data
+    data = pd.read_csv(file_path, header=None).iloc[:, 0].values
+
+    # Ensure the labels array has the same length as the data
+    if len(data) != len(labels):
+        raise ValueError("The length of the data and labels must match.")
+
+    # Create a figure
+    plt.figure(figsize=(12, 6))
+    plt.plot(data, label='Time Series Data', color='blue', alpha=0.7)
+
+    # Highlight anomalies
+    anomaly_indices = np.where(labels == 1)[0]
+    plt.scatter(anomaly_indices, data[anomaly_indices], color='red', label='Anomalies', alpha=0.9)
+
+    # Add titles and labels
+    plt.title('Time Series Data with Anomalies')
+    plt.xlabel('Index')
+    plt.ylabel('Value')
+    plt.legend()
+    plt.grid(True)
+
+    # Show the plot
     plt.show()
