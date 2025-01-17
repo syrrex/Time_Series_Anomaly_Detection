@@ -76,10 +76,10 @@ if __name__ == '__main__':
     )
 
     parameter_grid = {
-    "window_size": [50, 100, 350, 500], #50, 100, 
-    "k": [3, 5, 10],
+    "window_size": [50, 100, 350, 500], 
+    "k": [3, 5, 10], 
     "threshold_factor": [1.5, 2.0, 2.5, 3.5],
-    "distance_metric": ['euclidean', 'manhattan', 'cosine']  
+    "distance_metric": ['euclidean', 'manhattan', 'cosine']   
     }
 
     # Output directory for results

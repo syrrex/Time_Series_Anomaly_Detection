@@ -80,8 +80,8 @@ if __name__ == '__main__':
         filepath,
         knn_model,
         scaler,
-        window_size=100,
-        threshold_factor=2.5
+        window_size=350,
+        threshold_factor=3.5
     )
 
     smoothed_scores = smooth_anomaly_scores(scores, window_size=350)

@@ -39,8 +39,8 @@ if __name__ == '__main__':
     time_series = pd.read_csv(file_path, header=None).values.flatten()
 
     # Parameters for the most stable model found in with grid search
-    window_size = 100
-    k = 3
+    window_size = 350
+    k = 10
     distance_metric = 'manhattan'
 
     # Train the K-Nearest Windows model
