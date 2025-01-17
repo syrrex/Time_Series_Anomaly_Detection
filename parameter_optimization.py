@@ -7,6 +7,7 @@ from plots import visualize_detected_anomalies
 from pate.PATE_metric import PATE
 import matplotlib.pyplot as plt
 
+plt.ioff()
 
 def test_parameters(time_series, test_file, labels, parameter_grid, output_dir="results"):
 
@@ -16,37 +17,45 @@ def test_parameters(time_series, test_file, labels, parameter_grid, output_dir="
     for window_size in parameter_grid["window_size"]:
         for k in parameter_grid["k"]:
             for threshold_factor in parameter_grid["threshold_factor"]:
-                print(f"Testing: window_size={window_size}, k={k}, threshold_factor={threshold_factor}")
+                for distance_metric in parameter_grid["distance_metric"]:
+                    print(f"Testing: window_size={window_size}, k={k}, threshold_factor={threshold_factor}, distance_metric={distance_metric}")
 
-                # Train the model using the training data
-                knn_model, _, scaler = train_model(time_series, window_size=window_size, k=k)
+                    # Train the model using the training data
+                    knn_model, _, scaler = train_model(
+                        time_series, 
+                        window_size=window_size, 
+                        k=k, 
+                        distance_metric=distance_metric
+                    )
 
-                # Apply anomaly detection on the test data
-                scores = apply_anomaly_detection(test_file, knn_model, scaler, window_size, threshold_factor)
+                    # Apply anomaly detection on the test data
+                    scores = apply_anomaly_detection(test_file, knn_model, scaler, window_size, threshold_factor)
 
-                # Compute PATE metric
-                pate_score = PATE(labels, scores, binary_scores=False)
-                print(f"PATE Score: {pate_score:.4f}")
+                    # Compute PATE metric
+                    pate_score = PATE(labels, scores, binary_scores=False)
+                    print(f"PATE Score: {pate_score:.4f}")
 
-                # Save plot
-                plot_title = f"window_size={window_size}_k={k}_threshold={threshold_factor}_pate={pate_score:.4f}"
-                plot_filename = os.path.join(output_dir, f"{plot_title}.png")
-                visualize_detected_anomalies(
-                    data=pd.read_csv(test_file, header=None).iloc[:, 0].values,
-                    labels=labels,
-                    scores=scores,
-                    threshold=0.5,
-                    title=plot_title
-                )
-                plt.savefig(plot_filename)
-                plt.close()
-                print(f"Plot saved: {plot_filename}")
+                    # Save plot
+                    plot_title = f"ws={window_size}_k={k}_th={threshold_factor}_dm={distance_metric}_pate={pate_score:.4f}"
+                    plot_filename = os.path.join(output_dir, f"{plot_title}.png")
+                    visualize_detected_anomalies(
+                        data=pd.read_csv(test_file, header=None).iloc[:, 0].values,
+                        labels=labels,
+                        scores=scores,
+                        threshold=0.5,
+                        title=plot_title
+                    )
+                    plt.savefig(plot_filename)
+                    plt.clf() 
+                    plt.close()
+                    print(f"Plot saved: {plot_filename}")
 
-                # Save scores and labels
-                results_filename = os.path.join(output_dir, f"{plot_title}_scores.csv")
-                results_df = pd.DataFrame({"Labels": labels, "Scores": scores})
-                results_df.to_csv(results_filename, index=False)
-                print(f"Scores saved: {results_filename}")
+                    # Save scores and labels
+                    results_filename = os.path.join(output_dir, f"{plot_title}_scores.csv")
+                    results_df = pd.DataFrame({"Labels": labels, "Scores": scores})
+                    results_df.to_csv(results_filename, index=False)
+                    print(f"Scores saved: {results_filename}")
+
 
 if __name__ == '__main__':
     # Paths to training and testing files
@@ -66,13 +75,11 @@ if __name__ == '__main__':
         gap_between_anomalies=gap_between_anomalies
     )
 
-
-
-    # Parameter grid
     parameter_grid = {
-        "window_size": [50, 100, 350, 500],
-        "k": [3, 5, 10],
-        "threshold_factor": [1.5, 2.0, 2.5, 3.5]
+    "window_size": [50, 100, 350, 500], #50, 100, 
+    "k": [3, 5, 10],
+    "threshold_factor": [1.5, 2.0, 2.5, 3.5],
+    "distance_metric": ['euclidean', 'manhattan', 'cosine']  
     }
 
     # Output directory for results
