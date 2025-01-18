@@ -7,6 +7,14 @@ from plots import *
 from create_testdata import *
 
 
+def remove_trend_differencing(data, order=1):
+    return np.diff(data, n=order)
+
+
+def reverse_differencing(differenced_data, initial_value):
+    return np.r_[initial_value, differenced_data].cumsum()
+
+
 def apply_anomaly_detection(file_path, model, scaler, window_size, threshold_factor):
     # Load the test data
     test_data = pd.read_csv(file_path, header=None).iloc[:, 0].values
@@ -57,16 +65,20 @@ def smooth_anomaly_scores(raw_scores, window_size):
     return smoothed_scores
 
 
-
-
 if __name__ == '__main__':
     # Load the model and scaler
     knn_model = joblib.load('knn_model.joblib')
     scaler = joblib.load('scaler.joblib') if os.path.exists('scaler.joblib') else None
 
     # Generate datasets
-    anomaly_lengths = [350, 200, 200, 1000, 200, 5000]
-    gap_between_anomalies = 5000
+    anomaly_lengths = [
+        [50, 250, 500],  # Lengths for 'constant' anomalies
+        [10, 100, 250],  # Lengths for 'peak' anomalies
+        [10, 100, 250],  # Lengths for 'trough' anomalies
+        [100, 50, 500],  # Lengths for 'reverse' anomalies
+        [80, 100, 300]  # Lengths for 'noise' anomalies
+    ]
+    gap_between_anomalies = 2000
 
     filepath, labels = create_testfile_with_sequential_anomalies(
         file_path,
@@ -74,6 +86,11 @@ if __name__ == '__main__':
         gap_between_anomalies=gap_between_anomalies
     )
     data = pd.read_csv(filepath, header=None).iloc[:, 0].values
+    initial_value = data[0]
+    visualize_test_data(data, labels)
+
+    # remove the trend using differencing gives us better results
+    data = remove_trend_differencing(data)
     visualize_test_data(data, labels)
 
     scores = apply_anomaly_detection(
@@ -91,7 +108,9 @@ if __name__ == '__main__':
     df = pd.DataFrame(smoothed_scores, columns=["Score"])
     df.to_csv(output_path, index=False, header=False)
 
-    visualize_detected_anomalies(data, labels, smoothed_scores, threshold=0.8)
+    # Visualize the detected anomalies
+    data = reverse_differencing(data, initial_value)
+    visualize_detected_anomalies(data, labels, smoothed_scores, threshold=0.6)
 
     # Compute PATE metric
     print("compute metric")

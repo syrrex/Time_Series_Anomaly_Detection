@@ -7,7 +7,7 @@ from plots import visualize_detected_anomalies
 from pate.PATE_metric import PATE
 import matplotlib.pyplot as plt
 
-plt.ioff()
+
 
 def test_parameters(time_series, test_file, labels, parameter_grid, output_dir="results"):
 
@@ -22,9 +22,9 @@ def test_parameters(time_series, test_file, labels, parameter_grid, output_dir="
 
                     # Train the model using the training data
                     knn_model, _, scaler = train_model(
-                        time_series, 
-                        window_size=window_size, 
-                        k=k, 
+                        time_series,
+                        window_size=window_size,
+                        k=k,
                         distance_metric=distance_metric
                     )
 
@@ -46,7 +46,7 @@ def test_parameters(time_series, test_file, labels, parameter_grid, output_dir="
                         title=plot_title
                     )
                     plt.savefig(plot_filename)
-                    plt.clf() 
+                    plt.clf()
                     plt.close()
                     print(f"Plot saved: {plot_filename}")
 
@@ -64,10 +64,14 @@ if __name__ == '__main__':
     # Load training data
     time_series = pd.read_csv(train_file, header=None).values.flatten()
 
-    # Generate the test data right now in the generate testdata the trend is not generated //TODO: Test with trend, probably one trending file
-    # ['constant', 'peak', 'trough', 'reverse', 'noise', 'trend']
-    anomaly_lengths = [350, 200, 200, 1000, 200, 5000]
-    gap_between_anomalies = 5000
+    anomaly_lengths = [
+        [50, 250, 500],  # Lengths for 'constant' anomalies
+        [10, 100, 250],  # Lengths for 'peak' anomalies
+        [10, 100, 250],  # Lengths for 'trough' anomalies
+        [100, 50, 500],  # Lengths for 'reverse' anomalies
+        [80, 100, 300]  # Lengths for 'noise' anomalies
+    ]
+    gap_between_anomalies = 2000
 
     test_file, labels = create_testfile_with_sequential_anomalies(
         file_path=train_file,
@@ -76,14 +80,17 @@ if __name__ == '__main__':
     )
 
     parameter_grid = {
-    "window_size": [50, 100, 350, 500], 
+    "window_size": [50, 100, 250, 350, 500],
     "k": [3, 5, 10], 
-    "threshold_factor": [1.5, 2.0, 2.5, 3.5],
+    "threshold_factor": [1.5, 2, 3, 5],
     "distance_metric": ['euclidean', 'manhattan', 'cosine']   
     }
 
     # Output directory for results
     output_dir = "results"
+
+    # make data stationary
+    time_series = remove_trend_differencing(time_series)
 
     # Run parameter testing
     test_parameters(time_series, test_file, labels, parameter_grid)
