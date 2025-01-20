@@ -14,14 +14,14 @@ def apply_baseline_model(file_path):
     return scores
 
 
-def apply_anomaly_detection(file_path, model, scaler, window_size, threshold_factor):
+def apply_anomaly_detection(file_path, model, scaler, window_size, threshold_factor, remove_trend=True):
     # Load the test data
     test_data = pd.read_csv(file_path, header=None).iloc[:, 0].values
-    test_data = remove_trend_differencing(test_data)
 
-    # Normalize the data if a scaler is provided
-    if scaler:
-        test_data = scaler.transform(test_data.reshape(-1, 1)).flatten()
+    if remove_trend:
+        test_data = remove_trend_differencing(test_data)
+
+    test_data = scaler.transform(test_data.reshape(-1, 1)).flatten()
 
     # Create sliding windows for the test data
     windows = []
@@ -64,57 +64,3 @@ def smooth_anomaly_scores(raw_scores, window_size):
 
     return smoothed_scores
 
-
-if __name__ == '__main__':
-    # Load the model and scaler
-    knn_model = joblib.load('knn_model.joblib')
-    scaler = joblib.load('scaler.joblib') if os.path.exists('scaler.joblib') else None
-
-    # Generate datasets
-    anomaly_lengths = [
-        [100, 250, 500],  # Lengths for 'constant' anomalies
-        [100, 250, 500],  # Lengths for 'peak' anomalies
-        [100, 250, 500],  # Lengths for 'trough' anomalies
-        [100, 250, 500],  # Lengths for 'reverse' anomalies
-        [100, 250, 500]   # Lengths for 'noise' anomalies
-    ]
-    gap_between_anomalies = 2000
-
-    filepath, labels = create_testfile_with_sequential_anomalies(
-        file_path,
-        anomaly_lengths=anomaly_lengths,
-        gap_between_anomalies=gap_between_anomalies
-    )
-    data = pd.read_csv(filepath, header=None).iloc[:, 0].values
-    initial_value = data[0]
-    visualize_test_data(data, labels)
-
-    # remove the trend using differencing
-    data = remove_trend_differencing(data)
-    visualize_test_data(data, labels)
-
-    scores = apply_anomaly_detection(
-        filepath,
-        knn_model,
-        scaler,
-        window_size=350,
-        threshold_factor=3.5
-    )
-
-    smoothed_scores = smooth_anomaly_scores(scores, window_size=350)
-
-    base_dir = os.path.dirname(filepath)
-    output_path = os.path.join(base_dir, "anomaly_scores.csv")
-    df = pd.DataFrame(smoothed_scores, columns=["Score"])
-    df.to_csv(output_path, index=False, header=False)
-
-    # Visualize the detected anomalies
-    data = reverse_differencing(data, initial_value)
-    visualize_detected_anomalies(data, labels, smoothed_scores, threshold=0.6)
-
-    baseline_scores = apply_baseline_model(file_path)
-
-    # Compute PATE metric
-    print("compute metric")
-    pate_metric = PATE(labels, smoothed_scores, binary_scores=False)
-    print(f"Dataset: PATE Score: {pate_metric:.4f}")

@@ -121,36 +121,7 @@ def create_testfile_with_one_anomaly_each(file_path, anomaly_lengths, gap_betwee
     labels = labels[:len(data)]
 
     # Save the modified data to a new CSV file
-    new_file_path = os.path.splitext(file_path)[0] + "_with_single_anomalies.csv"
+    new_file_path = os.path.splitext(file_path)[0] + "_with_anomalies_each.csv"
     pd.DataFrame(data).to_csv(new_file_path, header=False, index=False)
 
     return new_file_path, labels
-
-
-if __name__ == '__main__':
-    file_path = "X_train.csv"
-    # ['constant', 'peak', 'trough', 'reverse', 'noise']
-    anomaly_lengths = [
-        [50, 250, 500],  # Lengths for 'constant' anomalies
-        [10, 100, 250],  # Lengths for 'peak' anomalies
-        [10, 100, 250],  # Lengths for 'trough' anomalies
-        [100, 50, 500],  # Lengths for 'reverse' anomalies
-        [80, 100, 300]  # Lengths for 'noise' anomalies
-    ]
-    gap_between_anomalies = 2000
-
-    new_file_path, labels = create_testfile_with_sequential_anomalies(
-        file_path,
-        anomaly_lengths=anomaly_lengths,
-        gap_between_anomalies=gap_between_anomalies
-    )
-
-    print(f"New file created at: {new_file_path}")
-
-    visualize_anomalies(new_file_path, labels)
-
-    anomaly_lengths = [200, 200, 250, 250, 250]
-    single_anomaly_file_path, single_anomaly_labels = create_testfile_with_one_anomaly_each(
-        file_path, anomaly_lengths
-    )
-    visualize_anomalies(single_anomaly_file_path, single_anomaly_labels)

@@ -8,9 +8,7 @@ from pate.PATE_metric import PATE
 import matplotlib.pyplot as plt
 
 
-
 def test_parameters(time_series, test_file, labels, parameter_grid, output_dir="results"):
-
     os.makedirs(output_dir, exist_ok=True)
 
     # Iterate through the parameter grid
@@ -18,7 +16,8 @@ def test_parameters(time_series, test_file, labels, parameter_grid, output_dir="
         for k in parameter_grid["k"]:
             for threshold_factor in parameter_grid["threshold_factor"]:
                 for distance_metric in parameter_grid["distance_metric"]:
-                    print(f"Testing: window_size={window_size}, k={k}, threshold_factor={threshold_factor}, distance_metric={distance_metric}")
+                    print(
+                        f"Testing: window_size={window_size}, k={k}, threshold_factor={threshold_factor}, distance_metric={distance_metric}")
 
                     # Train the model using the training data
                     knn_model, _, scaler = train_model(
@@ -80,10 +79,10 @@ if __name__ == '__main__':
     )
 
     parameter_grid = {
-    "window_size": [100, 350],
-    "k": [3, 5, 10], 
-    "threshold_factor": [1.5, 3, 5],
-    "distance_metric": ['euclidean', 'manhattan', 'cosine']   
+        "window_size": [100, 350],
+        "k": [3, 5, 10],
+        "threshold_factor": [1.5, 3, 5],
+        "distance_metric": ['euclidean', 'manhattan', 'cosine']
     }
 
     # Output directory for results

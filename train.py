@@ -17,12 +17,13 @@ def reverse_differencing(differenced_data, initial_value):
     return np.r_[initial_value, differenced_data].cumsum()
 
 
-def train_model(time_series, window_size=10, k=5, distance_metric='euclidean'):
+def train_model(time_series, window_size=10, k=5, distance_metric='euclidean', remove_trend=True):
     # Normalize the data
     scaler = MinMaxScaler()
 
     # Remove trend
-    time_series = remove_trend_differencing(time_series)
+    if remove_trend:
+        time_series = remove_trend_differencing(time_series)
 
     # scale the data
     time_series = scaler.fit_transform(time_series.reshape(-1, 1)).flatten()
@@ -53,7 +54,7 @@ if __name__ == '__main__':
 
     # Parameters for the most stable model found in with grid search
     window_size = 350
-    k = 5
+    k = 3
     distance_metric = 'manhattan'
 
     # Train the K-Nearest Windows model
