@@ -1,5 +1,6 @@
-
+from pate.PATE_metric import PATE
 from test import *
+
 from create_testdata import *
 from plots import *
 
