@@ -88,7 +88,5 @@ if __name__ == '__main__':
     # Output directory for results
     output_dir = "results"
 
-    time_series = remove_trend_differencing(time_series)
-
     # Run parameter testing
     test_parameters(time_series, test_file, labels, parameter_grid)

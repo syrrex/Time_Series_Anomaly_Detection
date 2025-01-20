@@ -1,9 +1,4 @@
-from pate.PATE_metric import PATE
-from scipy.ndimage import gaussian_filter1d
-
 from train import *
-from create_testdata import *
-from plots import *
 from create_testdata import *
 
 

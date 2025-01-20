@@ -1,4 +1,4 @@
-from train import *
+
 from test import *
 from create_testdata import *
 from plots import *
@@ -84,7 +84,7 @@ if __name__ == '__main__':
         print(f"PATE score for model2 with smoothing: {pate_metric_2_smoothed}")
 
     # Experiment: Different k: slightly worse results with higher k but not that significant
-    k_list = [2, 3, 5, 7, 9]
+    k_list = [3, 5, 7, 9]
     for k in k_list:
         print(f"Processing dataset with k: {k}")
         anomaly_lengths = [250, 250, 250, 250, 250]
