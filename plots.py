@@ -27,16 +27,7 @@ def visualize_test_data(data, labels, title="Test Data with Anomalies"):
 
 
 def visualize_detected_anomalies(data, labels, scores, threshold=0.5, title="Detected Anomalies"):
-    """
-    Visualize the detected anomalies in the test data with improved clarity.
 
-    Parameters:
-        data (numpy array): Time series data.
-        labels (numpy array): Ground truth labels (1 for anomaly, 0 for normal).
-        scores (numpy array): Anomaly scores (0-1, higher = more anomalous).
-        threshold (float): Threshold to classify anomalies based on scores.
-        title (str): Title of the plot.
-    """
     plt.figure(figsize=(14, 7))
 
     # Plot the time series data

@@ -7,17 +7,17 @@ from plots import *
 from create_testdata import *
 
 
-def remove_trend_differencing(data, order=1):
-    return np.diff(data, n=order)
-
-
-def reverse_differencing(differenced_data, initial_value):
-    return np.r_[initial_value, differenced_data].cumsum()
+# label every point as anomaly
+def apply_baseline_model(file_path):
+    time_series = pd.read_csv(file_path, header=None).iloc[:, 0].values
+    scores = np.ones(len(time_series))
+    return scores
 
 
 def apply_anomaly_detection(file_path, model, scaler, window_size, threshold_factor):
     # Load the test data
     test_data = pd.read_csv(file_path, header=None).iloc[:, 0].values
+    test_data = remove_trend_differencing(test_data)
 
     # Normalize the data if a scaler is provided
     if scaler:
@@ -72,11 +72,11 @@ if __name__ == '__main__':
 
     # Generate datasets
     anomaly_lengths = [
-        [50, 250, 500],  # Lengths for 'constant' anomalies
-        [10, 100, 250],  # Lengths for 'peak' anomalies
-        [10, 100, 250],  # Lengths for 'trough' anomalies
-        [100, 50, 500],  # Lengths for 'reverse' anomalies
-        [80, 100, 300]  # Lengths for 'noise' anomalies
+        [100, 250, 500],  # Lengths for 'constant' anomalies
+        [100, 250, 500],  # Lengths for 'peak' anomalies
+        [100, 250, 500],  # Lengths for 'trough' anomalies
+        [100, 250, 500],  # Lengths for 'reverse' anomalies
+        [100, 250, 500]   # Lengths for 'noise' anomalies
     ]
     gap_between_anomalies = 2000
 
@@ -89,7 +89,7 @@ if __name__ == '__main__':
     initial_value = data[0]
     visualize_test_data(data, labels)
 
-    # remove the trend using differencing gives us better results
+    # remove the trend using differencing
     data = remove_trend_differencing(data)
     visualize_test_data(data, labels)
 
@@ -111,6 +111,8 @@ if __name__ == '__main__':
     # Visualize the detected anomalies
     data = reverse_differencing(data, initial_value)
     visualize_detected_anomalies(data, labels, smoothed_scores, threshold=0.6)
+
+    baseline_scores = apply_baseline_model(file_path)
 
     # Compute PATE metric
     print("compute metric")

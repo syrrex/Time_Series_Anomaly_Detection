@@ -65,11 +65,11 @@ if __name__ == '__main__':
     time_series = pd.read_csv(train_file, header=None).values.flatten()
 
     anomaly_lengths = [
-        [50, 250, 500],  # Lengths for 'constant' anomalies
-        [10, 100, 250],  # Lengths for 'peak' anomalies
-        [10, 100, 250],  # Lengths for 'trough' anomalies
-        [100, 50, 500],  # Lengths for 'reverse' anomalies
-        [80, 100, 300]  # Lengths for 'noise' anomalies
+        [100, 250, 500],  # Lengths for 'constant' anomalies
+        [100, 250, 500],  # Lengths for 'peak' anomalies
+        [100, 250, 500],  # Lengths for 'trough' anomalies
+        [100, 250, 500],  # Lengths for 'reverse' anomalies
+        [100, 250, 500]  # Lengths for 'noise' anomalies
     ]
     gap_between_anomalies = 2000
 
@@ -80,16 +80,15 @@ if __name__ == '__main__':
     )
 
     parameter_grid = {
-    "window_size": [50, 100, 250, 350, 500],
+    "window_size": [100, 350],
     "k": [3, 5, 10], 
-    "threshold_factor": [1.5, 2, 3, 5],
+    "threshold_factor": [1.5, 3, 5],
     "distance_metric": ['euclidean', 'manhattan', 'cosine']   
     }
 
     # Output directory for results
     output_dir = "results"
 
-    # make data stationary
     time_series = remove_trend_differencing(time_series)
 
     # Run parameter testing

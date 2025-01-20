@@ -4,14 +4,27 @@ from sklearn.neighbors import NearestNeighbors
 import numpy as np
 import pandas as pd
 import joblib
-import os
-
 file_path = 'X_train.csv'
+
+
+def remove_trend_differencing(data, order=1):
+    differenced_data = np.diff(data, n=order)
+    differenced_data = np.insert(differenced_data, 0, 0)
+    return differenced_data
+
+
+def reverse_differencing(differenced_data, initial_value):
+    return np.r_[initial_value, differenced_data].cumsum()
 
 
 def train_model(time_series, window_size=10, k=5, distance_metric='euclidean'):
     # Normalize the data
     scaler = MinMaxScaler()
+
+    # Remove trend
+    time_series = remove_trend_differencing(time_series)
+
+    # scale the data
     time_series = scaler.fit_transform(time_series.reshape(-1, 1)).flatten()
 
     # Create sliding windows
@@ -39,8 +52,8 @@ if __name__ == '__main__':
     time_series = pd.read_csv(file_path, header=None).values.flatten()
 
     # Parameters for the most stable model found in with grid search
-    window_size = 100
-    k = 10
+    window_size = 350
+    k = 5
     distance_metric = 'manhattan'
 
     # Train the K-Nearest Windows model
