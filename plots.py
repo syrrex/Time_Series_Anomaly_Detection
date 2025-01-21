@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from datetime import datetime
+import os
 
 
 def visualize_test_data(data, labels, title="Test Data with Anomalies"):
@@ -53,7 +55,20 @@ def visualize_detected_anomalies(data, labels, scores, threshold=0.5, title="Det
     plt.ylabel("Value")
     plt.grid(True)
     plt.tight_layout()
-    plt.show()
+
+    # Save the plot to a unique file in 'final_results'
+    save_folder = "final_results"
+    os.makedirs(save_folder, exist_ok=True)  # Create the folder if it doesn't exist
+
+    # Create a unique filename
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"{title.replace(' ', '_')}_{timestamp}.png"
+    filepath = os.path.join(save_folder, filename)
+
+    # Save the figure
+    plt.savefig(filepath, dpi=300)
+    print(f"Plot saved to: {filepath}")
+    plt.show(dpi=300)
 
 
 def visualize_anomalies(file_path, labels):
