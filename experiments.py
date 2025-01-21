@@ -10,13 +10,16 @@ def train_and_test_a_model_with_dataconfig(window_size,
                                            k,
                                            distance_metric,
                                            threshold_factor,
-                                           anomaly_length_list,
                                            gap_between_anomalies,
+                                           anomaly_length_list=None,
                                            smoothing_sigma=75,
                                            smoothing=False,
                                            differencing=False,
                                            log_transform=False,
-                                           baseline=False):
+                                           baseline=False,
+                                           multiple_anomalies=True,
+                                           anomaly_factors=None,
+                                           anomaly_length_experiment10=None):
     """
     Trains a KNN model with the given parameters
     """
@@ -34,15 +37,25 @@ def train_and_test_a_model_with_dataconfig(window_size,
         log_transform=log_transform,
     )
 
-    path_anomaly, labels = create_testfile_with_sequential_anomalies(
-        file_path=file_path,
-        anomaly_lengths=anomaly_length_list,
-        gap_between_anomalies=gap_between_anomalies
-    )
+    if multiple_anomalies:
+        path_anomaly, labels = create_testfile_with_sequential_anomalies(
+            file_path=file_path,
+            anomaly_lengths=anomaly_length_list,
+            gap_between_anomalies=gap_between_anomalies
+        )
+    else:
+        path_anomaly, labels = create_testfile_factors(
+            file_path=file_path,
+            anomaly_lengths=anomaly_length_experiment10,
+            peak_factor=anomaly_factors[0],
+            trough_factor=anomaly_factors[1],
+            noise_factor=anomaly_factors[2],
+            gap_between_anomalies=gap_between_anomalies
+        )
 
     # baseline all anomalies:
     if baseline:
-        baseline_scores = apply_baseline_model(file_path)
+        baseline_scores = apply_baseline_model(path_anomaly)
         pate_metric_baseline = PATE(labels, baseline_scores, binary_scores=False)
         print(f"PATE score for baseline all anomalies: {pate_metric_baseline}")
 
@@ -132,7 +145,7 @@ def run_experiment_2():
                                            log_transform=True)
 
 
-# TODO: Experiment 3: Why does differencing not work well?
+# Experiment 3: Why does differencing not work well?
 def run_experiment_3():
     window_size = 250
     k = 2
@@ -324,8 +337,29 @@ def run_experiment_9():
     visualize_test_data(stat_data, labels_anomaly)
 
 
-if __name__ == '__main__':
+def run_experiment_10():
+    window_size = 250
+    k = 2
+    threshold_factor = 3.5
+    distance_metric = 'manhattan'
+    anomaly_lengths = [250, 250, 250]
+    #peak trough and noise factor
+    anomaly_factors = [1.5, 1.5, 1]
+    gap_between_anomalies = 10000
 
+    train_and_test_a_model_with_dataconfig(window_size=window_size,
+                                           k=k,
+                                           gap_between_anomalies=gap_between_anomalies,
+                                           distance_metric=distance_metric,
+                                           threshold_factor=threshold_factor,
+                                           anomaly_length_experiment10=anomaly_lengths,
+                                           anomaly_factors=anomaly_factors,
+                                           smoothing=True,
+                                           multiple_anomalies=False
+                                           )
+
+
+if __name__ == '__main__':
     # Working with raw data, no preprocessing, using the best model grid search gave us
     print("Running experiment 1 with raw data, no preprocessing, using the best model grid search gave us")
     run_experiment_1()
@@ -364,5 +398,5 @@ if __name__ == '__main__':
     run_experiment_9()
     print("-----------------------------------------------------------------------------------------------------------")
 
-    # TODO: Experiment 10: What happens when we change the anomaly strength
-    # run_experiment_10()
+    print("Running experiment 10: What happens when we reduce the anomaly strength")
+    run_experiment_10()
