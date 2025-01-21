@@ -7,7 +7,7 @@ import joblib
 file_path = 'X_train.csv'
 
 
-def remove_trend_differencing(data, order=1):
+def differencing_data(data, order=1):
     differenced_data = np.diff(data, n=order)
     differenced_data = np.insert(differenced_data, 0, 0)
     return differenced_data
@@ -28,7 +28,7 @@ def train_model(time_series, window_size=10, k=5, distance_metric='euclidean', d
     # Remove trend
     if differencing:
         print("Differencing the data...")
-        time_series = remove_trend_differencing(time_series)
+        time_series = differencing_data(time_series)
 
     if log_transform:
         print("Log transforming the data...")
@@ -62,16 +62,22 @@ if __name__ == '__main__':
     time_series = pd.read_csv(file_path, header=None).values.flatten()
 
     # Parameters for the most stable model found in with grid search
-    window_size = 350
-    k = 3
+    #window_size = 250
+    #k = 2
+    #distance_metric = 'manhattan'
+
+    window_size = 250
+    k = 5
     distance_metric = 'manhattan'
+
 
     # Train the K-Nearest Windows model
     knn_model, baseline_distances, scaler = train_model(
         time_series,
         window_size=window_size,
         k=k,
-        distance_metric=distance_metric
+        distance_metric=distance_metric,
+        log_transform=True
     )
 
     # Output results
@@ -89,7 +95,3 @@ if __name__ == '__main__':
     if scaler:
         joblib.dump(scaler, scaler_path)
         print(f"Scaler saved to {scaler_path}")
-
-    # Save the baseline distances
-    np.save(baseline_path, baseline_distances)
-    print(f"Baseline distances saved to {baseline_path}")

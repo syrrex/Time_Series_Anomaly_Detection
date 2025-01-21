@@ -11,9 +11,9 @@ def main(input_file):
     knn_model = joblib.load('knn_model.joblib')
     scaler = joblib.load('scaler.joblib') if joblib.os.path.exists('scaler.joblib') else None
 
-    window_size = 350
-    threshold_factor = 2.5
-    scores = apply_anomaly_detection(input_file, knn_model, scaler, window_size, threshold_factor)
+    window_size = 250
+    threshold_factor = 1.5
+    scores = apply_anomaly_detection(input_file, knn_model, scaler, window_size, threshold_factor, log_transform=True)
     smoothed_scores = smooth_anomaly_scores(scores, window_size)
     # Save scores to CSV
     scores_df = pd.DataFrame(smoothed_scores)
