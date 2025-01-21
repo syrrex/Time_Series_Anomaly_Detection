@@ -1,3 +1,5 @@
+from scipy.ndimage import gaussian_filter1d
+
 from train import *
 from create_testdata import *
 
@@ -9,12 +11,15 @@ def apply_baseline_model(file_path):
     return scores
 
 
-def apply_anomaly_detection(file_path, model, scaler, window_size, threshold_factor, remove_trend=True):
+def apply_anomaly_detection(file_path, model, scaler, window_size, threshold_factor, differencing=False, log_transform=False):
     # Load the test data
     test_data = pd.read_csv(file_path, header=None).iloc[:, 0].values
 
-    if remove_trend:
+    if differencing:
         test_data = remove_trend_differencing(test_data)
+
+    if log_transform:
+        test_data = log_transform_data(test_data)
 
     test_data = scaler.transform(test_data.reshape(-1, 1)).flatten()
 
@@ -43,19 +48,7 @@ def apply_anomaly_detection(file_path, model, scaler, window_size, threshold_fac
     return scores
 
 
-def smooth_anomaly_scores(raw_scores, window_size):
-    smoothed_scores = np.zeros_like(raw_scores, dtype=float)
-
-    for i in range(len(raw_scores)):
-        if i < window_size:
-            # Beginning: Average over available scores
-            smoothed_scores[i] = np.mean(raw_scores[:i + 1])
-        elif i > len(raw_scores) - window_size:
-            # End: Average over available scores
-            smoothed_scores[i] = np.mean(raw_scores[i:])
-        else:
-            # Middle: Average within the window
-            smoothed_scores[i] = np.mean(raw_scores[i - window_size // 2: i + window_size // 2 + 1])
-
-    return smoothed_scores
+def smooth_anomaly_scores(raw_scores, sigma=75):
+    smoothed_data = gaussian_filter1d(raw_scores, sigma=sigma)
+    return smoothed_data
 
