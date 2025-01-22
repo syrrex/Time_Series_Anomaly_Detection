@@ -81,7 +81,7 @@ if __name__ == '__main__':
 
     window_size = 250
     k = 5
-    threshold_factor = 1.5
+    threshold_factor = 3.5
     smoothing_sigma = 75
     distance_metric = 'manhattan'
 

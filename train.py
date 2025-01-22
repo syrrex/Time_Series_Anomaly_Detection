@@ -67,7 +67,7 @@ if __name__ == '__main__':
     #distance_metric = 'manhattan'
 
     window_size = 250
-    k = 5
+    k = 2
     distance_metric = 'manhattan'
 
 
