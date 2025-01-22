@@ -8,7 +8,7 @@ from pate.PATE_metric import PATE
 import matplotlib.pyplot as plt
 
 
-def test_parameters(time_series, test_file, labels, parameter_grid, output_dir="results", log_transorm=False):
+def test_parameters(time_series, test_file, labels, parameter_grid, output_dir="results", log_transorm=False, differencing=False):
     os.makedirs(output_dir, exist_ok=True)
 
     # Iterate through the parameter grid
@@ -25,7 +25,8 @@ def test_parameters(time_series, test_file, labels, parameter_grid, output_dir="
                         window_size=window_size,
                         k=k,
                         distance_metric=distance_metric,
-                        log_transform=log_transorm
+                        log_transform=log_transorm,
+                        differencing=differencing
                     )
 
                     # Apply anomaly detection on the test data
@@ -90,4 +91,4 @@ if __name__ == '__main__':
     output_dir = "results"
 
     # Run parameter testing
-    test_parameters(time_series, test_file, labels, parameter_grid, log_transorm=True)
+    test_parameters(time_series, test_file, labels, parameter_grid, log_transorm=False, differencing=True)

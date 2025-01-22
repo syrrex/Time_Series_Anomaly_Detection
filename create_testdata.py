@@ -7,7 +7,9 @@ import pandas as pd
 def create_testfile_with_sequential_anomalies(
         file_path,
         anomaly_lengths,
-        gap_between_anomalies=5000
+        gap_between_anomalies=5000,
+        peak_factor=1.5, trough_factor=1.5, noise_scale=50, constant_value=0
+
 ):
     if len(anomaly_lengths) != 5 or not all(len(lengths) == 3 for lengths in anomaly_lengths):
         raise ValueError("Provide a list of five sublists, each containing three lengths for the anomalies.")
@@ -23,11 +25,11 @@ def create_testfile_with_sequential_anomalies(
 
     # Define anomaly types and corresponding injection methods
     anomaly_types = ['constant', 'peak', 'trough', 'reverse', 'noise']
-    std_dev = np.std(data)
-    mean_value = np.mean(data)
 
     # Sequentially inject anomalies into the data (3 anomalies per type, with variable lengths)
     current_position = 2000
+    max_val = np.max(data) * peak_factor
+    min_val = np.min(data) * trough_factor
     for anomaly_type, anomaly_lengths_for_type in zip(anomaly_types, anomaly_lengths):
         for anomaly_length in anomaly_lengths_for_type:  # Iterate through the 3 lengths for this type
             if current_position + anomaly_length > len(data):
@@ -38,15 +40,15 @@ def create_testfile_with_sequential_anomalies(
 
             # Inject the anomaly
             if anomaly_type == 'constant':
-                data[start:end] = mean_value
+                data[start:end] = constant_value
             elif anomaly_type == 'peak':
-                data[start:end] += std_dev * 5
+                data[start:end] = max_val
             elif anomaly_type == 'trough':
-                data[start:end] -= std_dev * 5
+                data[start:end] = min_val
             elif anomaly_type == 'reverse':
                 data[start:end] = data[start:end][::-1]
             elif anomaly_type == 'noise':
-                data[start:end] += np.random.normal(0, std_dev * 2, size=anomaly_length)
+                data[start:end] += np.random.normal(0, noise_scale, size=anomaly_length)
 
             # Update labels for the anomalous segment
             labels[start:end] = 1

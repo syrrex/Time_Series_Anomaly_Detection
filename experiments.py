@@ -19,7 +19,8 @@ def train_and_test_a_model_with_dataconfig(window_size,
                                            baseline=False,
                                            multiple_anomalies=True,
                                            anomaly_factors=None,
-                                           anomaly_length_experiment10=None):
+                                           anomaly_length_experiment10=None,
+                                           peak_factor=1.5, trough_factor=1.5, noise_scale=50, constant_value=0):
     """
     Trains a KNN model with the given parameters
     """
@@ -145,10 +146,10 @@ def run_experiment_2():
                                            log_transform=True)
 
 
-# Experiment 3: Why does differencing not work well?
+# Experiment 3: We also tried grid search with log transforming the data Why does differencing not work well?
 def run_experiment_3():
-    window_size = 250
-    k = 2
+    window_size = 100
+    k = 3
     threshold_factor = 3.5
     distance_metric = 'manhattan'
 
@@ -170,7 +171,7 @@ def run_experiment_3():
                                            smoothing=True,
                                            differencing=True,
                                            log_transform=False,
-                                           baseline=True)
+                                           baseline=False)
 
 
 # Experiment 4: What influence has the window size
@@ -274,7 +275,7 @@ def run_experiment_7():
         [20, 50, 75],  # Lengths for 'reverse' anomalies
         [20, 50, 75]  # Lengths for 'noise' anomalies
     ]
-    gap_between_anomalies = 3500
+    gap_between_anomalies = 2000
 
     train_and_test_a_model_with_dataconfig(window_size=window_size,
                                            k=k,
@@ -318,7 +319,7 @@ def run_experiment_8():
 
 def run_experiment_9():
     anomaly_lengths = [
-        [100, 250, 500],  # Lengths for 'constant' anomalies
+        [100, 250, 100],  # Lengths for 'constant' anomalies
         [100, 250, 500],  # Lengths for 'peak' anomalies
         [100, 250, 500],  # Lengths for 'trough' anomalies
         [100, 250, 500],  # Lengths for 'reverse' anomalies
@@ -360,7 +361,7 @@ def run_experiment_10():
 
 
 if __name__ == '__main__':
-    # Working with raw data, no preprocessing, using the best model grid search gave us
+    # # Working with raw data, no preprocessing, using the best model grid search gave us
     print("Running experiment 1 with raw data, no preprocessing, using the best model grid search gave us")
     run_experiment_1()
     print("-----------------------------------------------------------------------------------------------------------")
@@ -393,7 +394,7 @@ if __name__ == '__main__':
     run_experiment_8()
     print("-----------------------------------------------------------------------------------------------------------")
 
-    # Why dont we detect extreme peaks and troughs? for this we need to inspect the data how it looks when it is stationary
+    #Why dont we detect extreme peaks and troughs? for this we need to inspect the data how it looks when it is stationary
     print("Bonus experiment: Why dont we detect extreme peaks and troughs when using differencing?")
     run_experiment_9()
     print("-----------------------------------------------------------------------------------------------------------")
