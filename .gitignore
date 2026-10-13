@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# IDE
+.idea/
+.vscode/
+
+# PyInstaller output
+build/
+dist/
+
+# Trained models (regenerate with `python train.py`)
+*.joblib
+*.npy
+
+# Generated test sets (created by create_testdata.py)
+X_train_with_*.csv
+
+# Generated scores, predictions and grid-search output
+results/
+anomaly_scores.csv
+experiment_*_scores.csv
+predictions_group_*.csv

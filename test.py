@@ -1,3 +1,5 @@
+from pate.PATE_metric import PATE
+
 from train import *
 from create_testdata import *
 
@@ -9,12 +11,14 @@ def apply_baseline_model(file_path):
     return scores
 
 
-def apply_anomaly_detection(file_path, model, scaler, window_size, threshold_factor, remove_trend=True):
+def apply_anomaly_detection(file_path, model, scaler, window_size, threshold_factor, remove_trend=True, log_transform=False):
     # Load the test data
     test_data = pd.read_csv(file_path, header=None).iloc[:, 0].values
 
     if remove_trend:
-        test_data = remove_trend_differencing(test_data)
+        test_data = make_stationary_differencing(test_data)
+    elif log_transform:
+        test_data = log_transform_data(test_data)
 
     test_data = scaler.transform(test_data.reshape(-1, 1)).flatten()
 
@@ -59,3 +63,30 @@ def smooth_anomaly_scores(raw_scores, window_size):
 
     return smoothed_scores
 
+
+if __name__ == '__main__':
+    file_path = 'X_train.csv'
+    time_series = pd.read_csv(file_path, header=None).values.flatten()
+    # Load the trained model and scaler
+    knn_model = joblib.load('knn_model.joblib')
+    scaler = joblib.load('scaler.joblib') if os.path.exists('scaler.joblib') else None
+    threshold = 3.5
+    k = 3
+    anomaly_lengths = [350, 350, 350, 350, 350]
+    path_anomaly, labels_anomaly = create_testfile_with_one_anomaly_each(
+        file_path, anomaly_lengths
+    )
+    anomaly_data = pd.read_csv(path_anomaly, header=None).iloc[:, 0].values
+    scores = apply_anomaly_detection(
+        path_anomaly,
+        knn_model,
+        scaler,
+        window_size=350,
+        threshold_factor=threshold,
+        remove_trend=False
+    )
+    smoothed_scores = smooth_anomaly_scores(scores, window_size=350)
+
+    pate_metric = PATE(labels_anomaly, smoothed_scores, binary_scores=False)
+    visualize_detected_anomalies(anomaly_data, labels_anomaly, smoothed_scores, threshold=0.5)
+    print(f"PATE score for model with k={k}: {pate_metric}")

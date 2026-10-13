@@ -6,6 +6,9 @@ from create_testdata import create_testfile_with_sequential_anomalies
 from plots import visualize_detected_anomalies
 from pate.PATE_metric import PATE
 import matplotlib.pyplot as plt
+from scipy.ndimage import gaussian_filter1d
+
+
 
 
 def test_parameters(time_series, test_file, labels, parameter_grid, output_dir="results"):
@@ -24,11 +27,12 @@ def test_parameters(time_series, test_file, labels, parameter_grid, output_dir="
                         time_series,
                         window_size=window_size,
                         k=k,
-                        distance_metric=distance_metric
+                        distance_metric=distance_metric,
+                        remove_trend=False
                     )
 
                     # Apply anomaly detection on the test data
-                    scores = apply_anomaly_detection(test_file, knn_model, scaler, window_size, threshold_factor)
+                    scores = apply_anomaly_detection(test_file, knn_model, scaler, window_size, threshold_factor, remove_trend=False)
 
                     # Compute PATE metric
                     pate_score = PATE(labels, scores, binary_scores=False)
@@ -79,10 +83,10 @@ if __name__ == '__main__':
     )
 
     parameter_grid = {
-        "window_size": [100, 350],
-        "k": [3, 5, 10],
-        "threshold_factor": [1.5, 3, 5],
-        "distance_metric": ['euclidean', 'manhattan', 'cosine']
+        "window_size": [100, 250, 350],
+        "k": [2, 3, 5, 10],
+        "threshold_factor": [1.5, 2.5, 3.5],
+        "distance_metric": ['euclidean', 'manhattan', 'minkowski'],
     }
 
     # Output directory for results
