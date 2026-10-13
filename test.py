@@ -1,7 +1,8 @@
-from pate.PATE_metric import PATE
-
+from scipy.ndimage import gaussian_filter1d
+from experiments import *
 from train import *
 from create_testdata import *
+from pate.PATE_metric import PATE
 
 
 # label every point as anomaly
@@ -11,13 +12,14 @@ def apply_baseline_model(file_path):
     return scores
 
 
-def apply_anomaly_detection(file_path, model, scaler, window_size, threshold_factor, remove_trend=True, log_transform=False):
+def apply_anomaly_detection(file_path, model, scaler, window_size, threshold_factor, differencing=False, log_transform=False):
     # Load the test data
     test_data = pd.read_csv(file_path, header=None).iloc[:, 0].values
 
-    if remove_trend:
-        test_data = make_stationary_differencing(test_data)
-    elif log_transform:
+    if differencing:
+        test_data = differencing_data(test_data)
+
+    if log_transform:
         test_data = log_transform_data(test_data)
 
     test_data = scaler.transform(test_data.reshape(-1, 1)).flatten()
@@ -47,46 +49,44 @@ def apply_anomaly_detection(file_path, model, scaler, window_size, threshold_fac
     return scores
 
 
-def smooth_anomaly_scores(raw_scores, window_size):
-    smoothed_scores = np.zeros_like(raw_scores, dtype=float)
-
-    for i in range(len(raw_scores)):
-        if i < window_size:
-            # Beginning: Average over available scores
-            smoothed_scores[i] = np.mean(raw_scores[:i + 1])
-        elif i > len(raw_scores) - window_size:
-            # End: Average over available scores
-            smoothed_scores[i] = np.mean(raw_scores[i:])
-        else:
-            # Middle: Average within the window
-            smoothed_scores[i] = np.mean(raw_scores[i - window_size // 2: i + window_size // 2 + 1])
-
-    return smoothed_scores
-
+def smooth_anomaly_scores(raw_scores, sigma=75):
+    smoothed_data = gaussian_filter1d(raw_scores, sigma=sigma)
+    return smoothed_data
 
 if __name__ == '__main__':
-    file_path = 'X_train.csv'
-    time_series = pd.read_csv(file_path, header=None).values.flatten()
-    # Load the trained model and scaler
-    knn_model = joblib.load('knn_model.joblib')
-    scaler = joblib.load('scaler.joblib') if os.path.exists('scaler.joblib') else None
-    threshold = 3.5
-    k = 3
-    anomaly_lengths = [350, 350, 350, 350, 350]
-    path_anomaly, labels_anomaly = create_testfile_with_one_anomaly_each(
-        file_path, anomaly_lengths
-    )
-    anomaly_data = pd.read_csv(path_anomaly, header=None).iloc[:, 0].values
-    scores = apply_anomaly_detection(
-        path_anomaly,
-        knn_model,
-        scaler,
-        window_size=350,
-        threshold_factor=threshold,
-        remove_trend=False
-    )
-    smoothed_scores = smooth_anomaly_scores(scores, window_size=350)
 
-    pate_metric = PATE(labels_anomaly, smoothed_scores, binary_scores=False)
-    visualize_detected_anomalies(anomaly_data, labels_anomaly, smoothed_scores, threshold=0.5)
-    print(f"PATE score for model with k={k}: {pate_metric}")
+    # Load the trained model and scaler
+    train_file = 'X_train.csv'
+
+    # Load training data
+    time_series = pd.read_csv(train_file, header=None).values.flatten()
+
+    anomaly_lengths = [
+        [100, 250, 500],  # Lengths for 'constant' anomalies
+        [100, 250, 500],  # Lengths for 'peak' anomalies
+        [100, 250, 500],  # Lengths for 'trough' anomalies
+        [100, 250, 500],  # Lengths for 'reverse' anomalies
+        [100, 250, 500]  # Lengths for 'noise' anomalies
+    ]
+    gap_between_anomalies = 2000
+
+    test_file, labels = create_testfile_with_sequential_anomalies(
+        file_path=train_file,
+        anomaly_lengths=anomaly_lengths,
+        gap_between_anomalies=gap_between_anomalies
+    )
+
+    knn_model = joblib.load('knn_model.joblib')
+    scaler = joblib.load('scaler.joblib') if joblib.os.path.exists('scaler.joblib') else None
+
+    window_size = 250
+    k = 5
+    threshold_factor = 3.5
+    smoothing_sigma = 75
+    distance_metric = 'manhattan'
+
+    scores = apply_anomaly_detection(test_file, knn_model, scaler, window_size, threshold_factor, log_transform=True)
+    smoothed_scores_model = smooth_anomaly_scores(scores, sigma=smoothing_sigma)
+    pate_metric_smoothed = PATE(labels, smoothed_scores_model, binary_scores=False)
+    print(f"PATE score for model with smoothing: {pate_metric_smoothed}")
+

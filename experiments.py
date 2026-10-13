@@ -1,267 +1,102 @@
 from pate.PATE_metric import PATE
-from scipy.ndimage import gaussian_filter1d
-
 from test import *
+from train import *
 
 from create_testdata import *
 from plots import *
 
 
-def smooth_large_binary_gaussian(data, sigma):
-    # Apply Gaussian smoothing
-    smoothed_data = gaussian_filter1d(data, sigma=sigma)
-    return smoothed_data
+def train_and_test_a_model_with_dataconfig(window_size,
+                                           k,
+                                           distance_metric,
+                                           threshold_factor,
+                                           gap_between_anomalies,
+                                           anomaly_length_list=None,
+                                           smoothing_sigma=75,
+                                           smoothing=False,
+                                           differencing=False,
+                                           log_transform=False,
+                                           baseline=False,
+                                           multiple_anomalies=True,
+                                           anomaly_factors=None,
+                                           anomaly_length_experiment10=None,
+                                           peak_factor=1.5, trough_factor=1.5, noise_scale=50, constant_value=0):
+    """
+    Trains a KNN model with the given parameters
+    """
+    print(f"Training KNN model with data configuration parameters window_size={window_size}, k={k}, "
+          f"distance_metric={distance_metric}, threshold_factor={threshold_factor}, log_transform={log_transform}...")
 
-
-def run_experiment_1(file_path):
-    # Load the time series data
+    file_path = 'X_train.csv'
     time_series = pd.read_csv(file_path, header=None).values.flatten()
-
-    anomaly_lengths = [
-        [100, 250, 500],  # Lengths for 'constant' anomalies
-        [100, 250, 500],  # Lengths for 'peak' anomalies
-        [100, 250, 500],  # Lengths for 'trough' anomalies
-        [100, 250, 500],  # Lengths for 'reverse' anomalies
-        [100, 250, 500]  # Lengths for 'noise' anomalies
-    ]
-    gap_between_anomalies = 2000
-
-    path_anomaly, labels_anomaly = create_testfile_with_sequential_anomalies(
-        file_path=file_path,
-        anomaly_lengths=anomaly_lengths,
-        gap_between_anomalies=gap_between_anomalies
-    )
-
-    window_size = 250
-    k = 2
-    distance_metric = 'manhattan'
-    remove_trend = False
-    threshold_factor = 3.5
-
     knn_model, _, scaler = train_model(
         time_series,
         window_size=window_size,
         k=k,
         distance_metric=distance_metric,
-        remove_trend=remove_trend
-    )
-    anomaly_data = pd.read_csv(path_anomaly, header=None).iloc[:, 0].values
-
-    scores = apply_anomaly_detection(path_anomaly, knn_model, scaler, window_size, threshold_factor,
-                                     remove_trend=remove_trend)
-    pate_metric = PATE(labels_anomaly, scores, binary_scores=False)
-    visualize_detected_anomalies(anomaly_data, labels_anomaly, scores, threshold=0.9)
-    print(f"PATE score for model without smoothing: {pate_metric}")
-
-    # Smooth the scores with gaussian filter
-    smoothed_scores = smooth_large_binary_gaussian(scores, sigma=75)
-    pate_metric = PATE(labels_anomaly, smoothed_scores, binary_scores=False)
-    print(f"PATE score for model with gaussian smoothing (sigma=75): {pate_metric}")
-    visualize_detected_anomalies(anomaly_data, labels_anomaly, smoothed_scores, threshold=0.9)
-    # csv_path = 'experiment_2_scores.csv'
-    # pd.DataFrame(smoothed_scores).to_csv(csv_path, header=False, index=False)
-
-
-def run_experiment_2(file_path):
-    # Load the time series data
-    time_series = pd.read_csv(file_path, header=None).values.flatten()
-
-    anomaly_lengths = [
-        [10, 50, 75],  # Lengths for 'constant' anomalies could not find smalest constant anomalie
-        [10, 50, 75],  # Lengths for 'peak' anomalies
-        [10, 50, 75],  # Lengths for 'trough' anomalies
-        [10, 50, 75],  # Lengths for 'reverse' anomalies could not find smallest 2 reverse anomalies
-        [10, 50, 75]  # Lengths for 'noise' anomalies
-    ]
-    gap_between_anomalies = 2000
-
-    path_anomaly, labels_anomaly = create_testfile_with_sequential_anomalies(
-        file_path=file_path,
-        anomaly_lengths=anomaly_lengths,
-        gap_between_anomalies=gap_between_anomalies
+        differencing=differencing,
+        log_transform=log_transform,
     )
 
-    window_size = 250
-    k = 2
-    distance_metric = 'manhattan'
-    remove_trend = False
-    threshold_factor = 3.5
-
-    knn_model, _, scaler = train_model(
-        time_series,
-        window_size=window_size,
-        k=k,
-        distance_metric=distance_metric,
-        remove_trend=remove_trend
-    )
-    anomaly_data = pd.read_csv(path_anomaly, header=None).iloc[:, 0].values
-    scores = apply_anomaly_detection(path_anomaly, knn_model, scaler, window_size, threshold_factor,
-                                     remove_trend=remove_trend)
-    pate_metric = PATE(labels_anomaly, scores, binary_scores=False)
-    visualize_detected_anomalies(anomaly_data, labels_anomaly, scores, threshold=0.8)
-    print(f"PATE score for model without smoothing: {pate_metric}")
-
-    # Smooth the scores
-    smoothed_scores = smooth_large_binary_gaussian(scores, sigma=75)
-    pate_metric = PATE(labels_anomaly, smoothed_scores, binary_scores=False)
-    visualize_detected_anomalies(anomaly_data, labels_anomaly, smoothed_scores, threshold=0.8)
-    print(f"PATE score for model with smoothing: {pate_metric}")
-
-
-def run_experiment_3(file_path):
-    # Load the time series data
-    time_series = pd.read_csv(file_path, header=None).values.flatten()
-
-    anomaly_lengths = [
-        [10, 50, 75],  # Lengths for 'constant' anomalies could not find smalest constant anomalie
-        [10, 50, 75],  # Lengths for 'peak' anomalies
-        [10, 50, 75],  # Lengths for 'trough' anomalies
-        [10, 50, 75],  # Lengths for 'reverse' anomalies could not find smallest 2 reverse anomalies
-        [10, 50, 75]  # Lengths for 'noise' anomalies
-    ]
-    gap_between_anomalies = 2000
-
-    path_anomaly, labels_anomaly = create_testfile_with_sequential_anomalies(
-        file_path=file_path,
-        anomaly_lengths=anomaly_lengths,
-        gap_between_anomalies=gap_between_anomalies
-    )
-
-    window_size = 250
-    k = 2
-    distance_metric = 'manhattan'
-    remove_trend = False
-    threshold_factor = 3.5
-
-    knn_model, _, scaler = train_model(
-        time_series,
-        window_size=window_size,
-        k=k,
-        distance_metric=distance_metric,
-        remove_trend=remove_trend
-    )
-    anomaly_data = pd.read_csv(path_anomaly, header=None).iloc[:, 0].values
-    scores = apply_anomaly_detection(path_anomaly, knn_model, scaler, window_size, threshold_factor,
-                                     remove_trend=remove_trend)
-    pate_metric = PATE(labels_anomaly, scores, binary_scores=False)
-    visualize_detected_anomalies(anomaly_data, labels_anomaly, scores, threshold=0.8)
-    print(f"PATE score for model without smoothing: {pate_metric}")
-
-    # Smooth the scores
-    smoothed_scores = smooth_large_binary_gaussian(scores, sigma=75)
-    pate_metric = PATE(labels_anomaly, smoothed_scores, binary_scores=False)
-    visualize_detected_anomalies(anomaly_data, labels_anomaly, smoothed_scores, threshold=0.8)
-    print(f"PATE score for model with standard smoothing: {pate_metric}")
-
-    # Smooth the scores more aggressively
-    smoothed_scores = smooth_large_binary_gaussian(scores, sigma=30)
-    pate_metric = PATE(labels_anomaly, smoothed_scores, binary_scores=False)
-    visualize_detected_anomalies(anomaly_data, labels_anomaly, smoothed_scores, threshold=0.8)
-    print(f"PATE score for model with aggressive smoothing: {pate_metric}")
-
-
-def run_experiment_4(file_path):
-    # Load the time series data
-    time_series = pd.read_csv(file_path, header=None).values.flatten()
-
-    anomaly_lengths = [
-        [250, 500, 1000],  # Lengths for 'constant' anomalies could not find smalest constant anomalie
-        [250, 500, 1000],  # Lengths for 'peak' anomalies
-        [250, 500, 1000],  # Lengths for 'trough' anomalies
-        [250, 500, 1000],  # Lengths for 'reverse' anomalies could not find smallest 2 reverse anomalies
-        [250, 500, 1000]  # Lengths for 'noise' anomalies
-    ]
-    gap_between_anomalies = 1200
-
-    path_anomaly, labels_anomaly = create_testfile_with_sequential_anomalies(
-        file_path=file_path,
-        anomaly_lengths=anomaly_lengths,
-        gap_between_anomalies=gap_between_anomalies
-    )
-
-    window_size = 250
-    k = 2
-    distance_metric = 'manhattan'
-    remove_trend = False
-    threshold_factor = 3.5
-
-    knn_model, _, scaler = train_model(
-        time_series,
-        window_size=window_size,
-        k=k,
-        distance_metric=distance_metric,
-        remove_trend=remove_trend
-    )
-    anomaly_data = pd.read_csv(path_anomaly, header=None).iloc[:, 0].values
-    scores = apply_anomaly_detection(path_anomaly, knn_model, scaler, window_size, threshold_factor,
-                                     remove_trend=remove_trend)
-    pate_metric = PATE(labels_anomaly, scores, binary_scores=False)
-    visualize_detected_anomalies(anomaly_data, labels_anomaly, scores, threshold=0.8)
-    print(f"PATE score for model without smoothing: {pate_metric}")
-
-    # Smooth the scores
-    smoothed_scores = smooth_large_binary_gaussian(scores, sigma=75)
-    pate_metric = PATE(labels_anomaly, smoothed_scores, binary_scores=False)
-    visualize_detected_anomalies(anomaly_data, labels_anomaly, smoothed_scores, threshold=0.8)
-    print(f"PATE score for model with standard smoothing: {pate_metric}")
-
-    # Smooth the scores more aggressively
-    smoothed_scores = smooth_large_binary_gaussian(scores, sigma=100)
-    pate_metric = PATE(labels_anomaly, smoothed_scores, binary_scores=False)
-    visualize_detected_anomalies(anomaly_data, labels_anomaly, smoothed_scores, threshold=0.8)
-    print(f"PATE score for model with less smoothing: {pate_metric}")
-
-
-def run_experiment_5(file_path):
-    # Load the time series data
-    time_series = pd.read_csv(file_path, header=None).values.flatten()
-
-    anomaly_lengths = [
-        [100, 250, 500],  # Lengths for 'constant' anomalies
-        [100, 250, 500],  # Lengths for 'peak' anomalies
-        [100, 250, 500],  # Lengths for 'trough' anomalies
-        [100, 250, 500],  # Lengths for 'reverse' anomalies
-        [100, 250, 500]  # Lengths for 'noise' anomalies
-    ]
-    gap_between_anomalies = 2000
-
-    path_anomaly, labels_anomaly = create_testfile_with_sequential_anomalies(
-        file_path=file_path,
-        anomaly_lengths=anomaly_lengths,
-        gap_between_anomalies=gap_between_anomalies
-    )
-
-    window_size = 250
-    ks = [2, 5, 10, 20]
-    distance_metric = 'manhattan'
-    remove_trend = False
-    threshold_factor = 3.5
-
-    for k in ks:
-        knn_model, _, scaler = train_model(
-            time_series,
-            window_size=window_size,
-            k=k,
-            distance_metric=distance_metric,
-            remove_trend=remove_trend
+    if multiple_anomalies:
+        path_anomaly, labels = create_testfile_with_sequential_anomalies(
+            file_path=file_path,
+            anomaly_lengths=anomaly_length_list,
+            gap_between_anomalies=gap_between_anomalies
         )
-        anomaly_data = pd.read_csv(path_anomaly, header=None).iloc[:, 0].values
+    else:
+        path_anomaly, labels = create_testfile_factors(
+            file_path=file_path,
+            anomaly_lengths=anomaly_length_experiment10,
+            peak_factor=anomaly_factors[0],
+            trough_factor=anomaly_factors[1],
+            noise_factor=anomaly_factors[2],
+            gap_between_anomalies=gap_between_anomalies
+        )
 
-        scores = apply_anomaly_detection(path_anomaly, knn_model, scaler, window_size, threshold_factor,
-                                         remove_trend=remove_trend)
+    # baseline all anomalies:
+    if baseline:
+        baseline_scores = apply_baseline_model(path_anomaly)
+        pate_metric_baseline = PATE(labels, baseline_scores, binary_scores=False)
+        print(f"PATE score for baseline all anomalies: {pate_metric_baseline}")
 
-        # Smooth the scores with gaussian filter
-        smoothed_scores = smooth_large_binary_gaussian(scores, sigma=75)
-        pate_metric = PATE(labels_anomaly, smoothed_scores, binary_scores=False)
-        print(f"PATE score for model with gaussian smoothing and k={k}: {pate_metric}")
-        visualize_detected_anomalies(anomaly_data, labels_anomaly, smoothed_scores, threshold=0.9)
-    # csv_path = 'experiment_2_scores.csv'
-    # pd.DataFrame(smoothed_scores).to_csv(csv_path, header=False, index=False)
+    scores = apply_anomaly_detection(
+        path_anomaly,
+        knn_model,
+        scaler,
+        window_size=window_size,
+        threshold_factor=threshold_factor,
+        differencing=differencing,
+        log_transform=log_transform
+    )
+
+    pate_metric = PATE(labels, scores, binary_scores=False)
+    print(f"PATE score for model: {pate_metric}")
+    plot_title = f"ws={window_size}_k={k}_th={threshold_factor}_dm={distance_metric}_pate={pate_metric:.4f}"
+    visualize_detected_anomalies(data=pd.read_csv(path_anomaly, header=None).iloc[:, 0].values,
+                                 labels=labels,
+                                 scores=scores,
+                                 threshold=0.75,
+                                 title=plot_title)
+
+    if smoothing:
+        smoothed_scores_model = smooth_anomaly_scores(scores, sigma=smoothing_sigma)
+        pate_metric_smoothed = PATE(labels, smoothed_scores_model, binary_scores=False)
+        plot_title = f"ws={window_size}_k={k}_th={threshold_factor}_dm={distance_metric}_pate={pate_metric_smoothed:.4f}"
+        visualize_detected_anomalies(data=pd.read_csv(path_anomaly, header=None).iloc[:, 0].values,
+                                     labels=labels,
+                                     scores=smoothed_scores_model,
+                                     threshold=0.5,
+                                     title=plot_title)
+        print(f"PATE score for model with smoothing: {pate_metric_smoothed}")
 
 
-def run_experiment_6(file_path):
-    # Load the time series data
-    time_series = pd.read_csv(file_path, header=None).values.flatten()
+# Experiment 1: Grid search gave us a model that worked with no preprocessing does it work better with smoothing?
+def run_experiment_1():
+    window_size = 250
+    k = 2
+    threshold_factor = 3.5
+    distance_metric = 'manhattan'
 
     anomaly_lengths = [
         [100, 250, 500],  # Lengths for 'constant' anomalies
@@ -272,40 +107,108 @@ def run_experiment_6(file_path):
     ]
     gap_between_anomalies = 2000
 
-    path_anomaly, labels_anomaly = create_testfile_with_sequential_anomalies(
-        file_path=file_path,
-        anomaly_lengths=anomaly_lengths,
-        gap_between_anomalies=gap_between_anomalies
-    )
+    train_and_test_a_model_with_dataconfig(window_size=window_size,
+                                           k=k,
+                                           distance_metric=distance_metric,
+                                           threshold_factor=threshold_factor,
+                                           anomaly_length_list=anomaly_lengths,
+                                           gap_between_anomalies=gap_between_anomalies,
+                                           smoothing=True,
+                                           differencing=False,
+                                           log_transform=False,
+                                           baseline=True)
 
-    window_sizes = [50, 100, 250, 400]
-    k = 2
+
+# Experiment 2: We also tried grid search with log transforming the data does it work better we also smooth the scores?
+def run_experiment_2():
+    window_size = 250
+    k = 5
+    threshold_factor = 1.5
     distance_metric = 'manhattan'
-    remove_trend = False
+
+    anomaly_lengths = [
+        [100, 250, 500],  # Lengths for 'constant' anomalies
+        [100, 250, 500],  # Lengths for 'peak' anomalies
+        [100, 250, 500],  # Lengths for 'trough' anomalies
+        [100, 250, 500],  # Lengths for 'reverse' anomalies
+        [100, 250, 500]  # Lengths for 'noise' anomalies
+    ]
+    gap_between_anomalies = 2000
+
+    train_and_test_a_model_with_dataconfig(window_size=window_size,
+                                           k=k,
+                                           distance_metric=distance_metric,
+                                           threshold_factor=threshold_factor,
+                                           anomaly_length_list=anomaly_lengths,
+                                           gap_between_anomalies=gap_between_anomalies,
+                                           smoothing=True,
+                                           differencing=False,
+                                           log_transform=True)
+
+
+# Experiment 3: We also tried grid search with log transforming the data Why does differencing not work well?
+def run_experiment_3():
+    window_size = 100
+    k = 3
     threshold_factor = 3.5
+    distance_metric = 'manhattan'
+
+    anomaly_lengths = [
+        [100, 250, 500],  # Lengths for 'constant' anomalies
+        [100, 250, 500],  # Lengths for 'peak' anomalies
+        [100, 250, 500],  # Lengths for 'trough' anomalies
+        [100, 250, 500],  # Lengths for 'reverse' anomalies
+        [100, 250, 500]  # Lengths for 'noise' anomalies
+    ]
+    gap_between_anomalies = 2000
+
+    train_and_test_a_model_with_dataconfig(window_size=window_size,
+                                           k=k,
+                                           distance_metric=distance_metric,
+                                           threshold_factor=threshold_factor,
+                                           anomaly_length_list=anomaly_lengths,
+                                           gap_between_anomalies=gap_between_anomalies,
+                                           smoothing=True,
+                                           differencing=True,
+                                           log_transform=False,
+                                           baseline=False)
+
+
+# Experiment 4: What influence has the window size
+def run_experiment_4():
+    window_sizes = [50, 100, 400]
+    k = 2
+    threshold_factor = 3.5
+    distance_metric = 'manhattan'
+
+    anomaly_lengths = [
+        [100, 250, 500],  # Lengths for 'constant' anomalies
+        [100, 250, 500],  # Lengths for 'peak' anomalies
+        [100, 250, 500],  # Lengths for 'trough' anomalies
+        [100, 250, 500],  # Lengths for 'reverse' anomalies
+        [100, 250, 500]  # Lengths for 'noise' anomalies
+    ]
+    gap_between_anomalies = 2000
 
     for window_size in window_sizes:
-        knn_model, _, scaler = train_model(
-            time_series,
-            window_size=window_size,
-            k=k,
-            distance_metric=distance_metric,
-            remove_trend=remove_trend
-        )
-        anomaly_data = pd.read_csv(path_anomaly, header=None).iloc[:, 0].values
-
-        scores = apply_anomaly_detection(path_anomaly, knn_model, scaler, window_size, threshold_factor,
-                                         remove_trend=remove_trend)
-
-        # Smooth the scores with gaussian filter
-        smoothed_scores = smooth_large_binary_gaussian(scores, sigma=75)
-        pate_metric = PATE(labels_anomaly, smoothed_scores, binary_scores=False)
-        print(f"PATE score for model with gaussian smoothing and window_size={window_size}: {pate_metric}")
-        visualize_detected_anomalies(anomaly_data, labels_anomaly, smoothed_scores, threshold=0.5)
+        train_and_test_a_model_with_dataconfig(window_size=window_size,
+                                               k=k,
+                                               distance_metric=distance_metric,
+                                               threshold_factor=threshold_factor,
+                                               anomaly_length_list=anomaly_lengths,
+                                               gap_between_anomalies=gap_between_anomalies,
+                                               smoothing=True,
+                                               differencing=False,
+                                               log_transform=False,
+                                               baseline=False)
 
 
-def run_experiment_7(file_path):
-    time_series = pd.read_csv(file_path, header=None).values.flatten()
+# Experiment 5: What influence has threshold factor
+def run_experiment_5():
+    window_size = 250
+    k = 2
+    threshold_factors = [1, 5, 10]
+    distance_metric = 'manhattan'
 
     anomaly_lengths = [
         [100, 250, 500],  # Lengths for 'constant' anomalies
@@ -316,45 +219,107 @@ def run_experiment_7(file_path):
     ]
     gap_between_anomalies = 2000
 
-    path_anomaly, labels_anomaly = create_testfile_with_sequential_anomalies(
-        file_path=file_path,
-        anomaly_lengths=anomaly_lengths,
-        gap_between_anomalies=gap_between_anomalies
-    )
+    for threshold_factor in threshold_factors:
+        train_and_test_a_model_with_dataconfig(window_size=window_size,
+                                               k=k,
+                                               distance_metric=distance_metric,
+                                               threshold_factor=threshold_factor,
+                                               anomaly_length_list=anomaly_lengths,
+                                               gap_between_anomalies=gap_between_anomalies,
+                                               smoothing=True,
+                                               differencing=False,
+                                               log_transform=False,
+                                               baseline=False)
 
+
+# Experiment 6: What influence has k
+def run_experiment_6():
     window_size = 250
-    k = 2
+    ks = [1, 5, 10]
+    threshold_factor = 2
     distance_metric = 'manhattan'
-    remove_trend = True
-    threshold_factor = 3.5
-
-    knn_model, _, scaler = train_model(
-        time_series,
-        window_size=window_size,
-        k=k,
-        distance_metric=distance_metric,
-        remove_trend=remove_trend
-    )
-    anomaly_data = pd.read_csv(path_anomaly, header=None).iloc[:, 0].values
-
-    scores = apply_anomaly_detection(path_anomaly, knn_model, scaler, window_size, threshold_factor,
-                                     remove_trend=remove_trend)
-    pate_metric = PATE(labels_anomaly, scores, binary_scores=False)
-    visualize_detected_anomalies(anomaly_data, labels_anomaly, scores, threshold=0.9)
-    print(f"PATE score for model without smoothing: {pate_metric}")
-
-    # Smooth the scores with gaussian filter
-    smoothed_scores = smooth_large_binary_gaussian(scores, sigma=75)
-    pate_metric = PATE(labels_anomaly, smoothed_scores, binary_scores=False)
-    print(f"PATE score for model with gaussian smoothing (sigma=75): {pate_metric}")
-    visualize_detected_anomalies(anomaly_data, labels_anomaly, smoothed_scores, threshold=0.9)
-
-
-def run_experiment_8(file_path):
-    # time_series = pd.read_csv(file_path, header=None).values.flatten()
 
     anomaly_lengths = [
         [100, 250, 500],  # Lengths for 'constant' anomalies
+        [100, 250, 500],  # Lengths for 'peak' anomalies
+        [100, 250, 500],  # Lengths for 'trough' anomalies
+        [100, 250, 500],  # Lengths for 'reverse' anomalies
+        [100, 250, 500]  # Lengths for 'noise' anomalies
+    ]
+    gap_between_anomalies = 2000
+
+    for k in ks:
+        train_and_test_a_model_with_dataconfig(window_size=window_size,
+                                               k=k,
+                                               distance_metric=distance_metric,
+                                               threshold_factor=threshold_factor,
+                                               anomaly_length_list=anomaly_lengths,
+                                               gap_between_anomalies=gap_between_anomalies,
+                                               smoothing=True,
+                                               differencing=False,
+                                               log_transform=False,
+                                               baseline=False)
+
+
+# Experiment 7: What influence have shorter anomaly lengths
+def run_experiment_7():
+    window_size = 250
+    k = 2
+    threshold_factor = 3.5
+    distance_metric = 'manhattan'
+
+    anomaly_lengths = [
+        [20, 50, 75],  # Lengths for 'constant' anomalies
+        [20, 50, 75],  # Lengths for 'peak' anomalies
+        [20, 50, 75],  # Lengths for 'trough' anomalies
+        [20, 50, 75],  # Lengths for 'reverse' anomalies
+        [20, 50, 75]  # Lengths for 'noise' anomalies
+    ]
+    gap_between_anomalies = 2000
+
+    train_and_test_a_model_with_dataconfig(window_size=window_size,
+                                           k=k,
+                                           distance_metric=distance_metric,
+                                           threshold_factor=threshold_factor,
+                                           anomaly_length_list=anomaly_lengths,
+                                           gap_between_anomalies=gap_between_anomalies,
+                                           smoothing=True,
+                                           differencing=False,
+                                           log_transform=False,
+                                           baseline=True)
+
+
+# Experiment 8: What influence have longer anomaly lengths
+def run_experiment_8():
+    window_size = 250
+    k = 2
+    threshold_factor = 3.5
+    distance_metric = 'manhattan'
+
+    anomaly_lengths = [
+        [750, 1000, 1500],  # Lengths for 'constant' anomalies
+        [750, 1000, 1500],  # Lengths for 'peak' anomalies
+        [750, 1000, 1500],  # Lengths for 'trough' anomalies
+        [750, 1000, 1500],  # Lengths for 'reverse' anomalies
+        [750, 1000, 1500]  # Lengths for 'noise' anomalies
+    ]
+    gap_between_anomalies = 750
+
+    train_and_test_a_model_with_dataconfig(window_size=window_size,
+                                           k=k,
+                                           distance_metric=distance_metric,
+                                           threshold_factor=threshold_factor,
+                                           anomaly_length_list=anomaly_lengths,
+                                           gap_between_anomalies=gap_between_anomalies,
+                                           smoothing=True,
+                                           differencing=False,
+                                           log_transform=False,
+                                           baseline=True)
+
+
+def run_experiment_9():
+    anomaly_lengths = [
+        [100, 250, 100],  # Lengths for 'constant' anomalies
         [100, 250, 500],  # Lengths for 'peak' anomalies
         [100, 250, 500],  # Lengths for 'trough' anomalies
         [100, 250, 500],  # Lengths for 'reverse' anomalies
@@ -369,102 +334,70 @@ def run_experiment_8(file_path):
     )
 
     data = pd.read_csv(path_anomaly, header=None).iloc[:, 0].values
-    stat_data = make_stationary_differencing(data)
+    stat_data = differencing_data(data)
     visualize_test_data(stat_data, labels_anomaly)
 
 
-def run_experiment_9(file_path):
-    # time_series = pd.read_csv(file_path, header=None).values.flatten()
-
-    anomaly_lengths = [
-        [100, 250, 500],  # Lengths for 'constant' anomalies
-        [100, 250, 500],  # Lengths for 'peak' anomalies
-        [100, 250, 500],  # Lengths for 'trough' anomalies
-        [100, 250, 500],  # Lengths for 'reverse' anomalies
-        [100, 250, 500]  # Lengths for 'noise' anomalies
-    ]
-    gap_between_anomalies = 2000
-
-    path_anomaly, labels_anomaly = create_testfile_with_sequential_anomalies(
-        file_path=file_path,
-        anomaly_lengths=anomaly_lengths,
-        gap_between_anomalies=gap_between_anomalies
-    )
-
-    time_series = pd.read_csv(path_anomaly, header=None).iloc[:, 0].values
-    stat_data = log_transform_data(time_series)
-    visualize_test_data(stat_data, labels_anomaly)
-
+def run_experiment_10():
     window_size = 250
     k = 2
-    distance_metric = 'manhattan'
-    diifferencing = False
-    log_transform = True
     threshold_factor = 3.5
+    distance_metric = 'manhattan'
+    anomaly_lengths = [250, 250, 250]
+    #peak trough and noise factor
+    anomaly_factors = [1.5, 1.5, 1]
+    gap_between_anomalies = 10000
 
-    knn_model, _, scaler = train_model(
-        time_series,
-        window_size=window_size,
-        k=k,
-        distance_metric=distance_metric,
-        remove_trend=diifferencing,
-        log_transform=log_transform
-    )
-    anomaly_data = pd.read_csv(path_anomaly, header=None).iloc[:, 0].values
-
-    scores = apply_anomaly_detection(path_anomaly, knn_model, scaler, window_size, threshold_factor,
-                                     remove_trend=diifferencing, log_transform=log_transform)
-    pate_metric = PATE(labels_anomaly, scores, binary_scores=False)
-    visualize_detected_anomalies(anomaly_data, labels_anomaly, scores, threshold=0.9)
-    print(f"PATE score for model without smoothing: {pate_metric}")
-
-    # Smooth the scores with gaussian filter
-    smoothed_scores = smooth_large_binary_gaussian(scores, sigma=75)
-    pate_metric = PATE(labels_anomaly, smoothed_scores, binary_scores=False)
-    print(f"PATE score for model with gaussian smoothing (sigma=75): {pate_metric}")
-    visualize_detected_anomalies(anomaly_data, labels_anomaly, smoothed_scores, threshold=0.9)
-
-
+    train_and_test_a_model_with_dataconfig(window_size=window_size,
+                                           k=k,
+                                           gap_between_anomalies=gap_between_anomalies,
+                                           distance_metric=distance_metric,
+                                           threshold_factor=threshold_factor,
+                                           anomaly_length_experiment10=anomaly_lengths,
+                                           anomaly_factors=anomaly_factors,
+                                           smoothing=True,
+                                           multiple_anomalies=False
+                                           )
 
 
 if __name__ == '__main__':
-    # Path to your CSV file
-    file_path = 'X_train.csv'
+    # # Working with raw data, no preprocessing, using the best model grid search gave us
+    print("Running experiment 1 with raw data, no preprocessing, using the best model grid search gave us")
+    run_experiment_1()
+    print("-----------------------------------------------------------------------------------------------------------")
 
-    # now that we found a suitable model we can make different experiments:
-    # Experiment 1: What happens if we smooth the scores?
-    # run_experiment_1(file_path)
+    print("Running experiment 2 with log transforming the data, using the best model grid search gave us")
+    run_experiment_2()
+    print("-----------------------------------------------------------------------------------------------------------")
 
-    # Experiment 2: What happens if we make anomaly sequences very small?
-    # run_experiment_2(file_path)
+    print("Running experiment 3 with differencing the data")
+    run_experiment_3()
+    print("-----------------------------------------------------------------------------------------------------------")
 
-    # TODO: if we know we test for smaller anomaly sequences, we could increase our smoothing
-    # Experiment 3:
-    # run_experiment_3(file_path)
+    print("Running experiment 4: what influence has the window size")
+    run_experiment_4()
+    print("-----------------------------------------------------------------------------------------------------------")
 
-    # TODO: What happens if we make anomaly sequences very large and is less smoothing better for large anomaly detection?
-    # Experiment 4:
-    # run_experiment_4(file_path)
+    print("Running experiment 5: What influence has threshold factor")
+    run_experiment_5()
+    print("-----------------------------------------------------------------------------------------------------------")
 
-    # TODO: what influence has k on it
-    # Experiment 5:
-    # run_experiment_5(file_path)
+    print("Running experiment 6: What influence has k")
+    run_experiment_6()
+    print("-----------------------------------------------------------------------------------------------------------")
 
-    # TODO: what influence has window_size on it
-    # Experiment 6:
-    # run_experiment_6(file_path)
+    print("Running experiment 7: What influence have shorter anomaly lengths")
+    run_experiment_7()
+    print("-----------------------------------------------------------------------------------------------------------")
 
-    # TODO: what happens if we difference the time series and make it stationary?
-    # Experiment 7: also experimenting with grid search to find a valid combination of parameters did not lead to valid results
-    # Problem are smoothing makes results worse, also extreme peaks and troughs are not detected
-    # run_experiment_7(file_path)
+    print("Running experiment 8: What influence have longer anomaly lengths")
+    run_experiment_8()
+    print("-----------------------------------------------------------------------------------------------------------")
 
-    # TODO: Why dont we detect extreme peaks and troughs? for this we need to inspect the data how it looks when it is stationary
-    # Experiment 8: after differencing the time series, we can see that sequences of extrem peaks and troughs are just one single anomaly point that can not be detected
-    # run_experiment_8(file_path)
+    #Why dont we detect extreme peaks and troughs? for this we need to inspect the data how it looks when it is stationary
+    print("Bonus experiment: Why dont we detect extreme peaks and troughs when using differencing?")
+    run_experiment_9()
+    print("-----------------------------------------------------------------------------------------------------------")
 
-    # TODO: Can we use something different than differencing to make the time series stationary? i.e. log-transform
-    # Experiment 9:
-    run_experiment_9(file_path)
-
-    # TODO: What happens if we use different anomalies, smaller peaks
+    print("Running experiment 10: What happens when we reduce the anomaly strength")
+    run_experiment_10()

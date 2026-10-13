@@ -93,7 +93,7 @@ Metric: **[PATE](https://arxiv.org/abs/2405.12096)** (Proximity-Aware Time serie
 
 ## Tech stack
 
-Python 3.9 · scikit-learn (`NearestNeighbors`, `MinMaxScaler`) · NumPy · pandas · SciPy (`gaussian_filter1d`) · Matplotlib · [PATE](https://pypi.org/project/PATE/) metric · TensorFlow/Keras (LSTM experiments) · PyInstaller (packaged CLI)
+Python 3.9 · scikit-learn (`NearestNeighbors`, `MinMaxScaler`) · NumPy · pandas · SciPy (`gaussian_filter1d`) · Matplotlib · [PATE](https://pypi.org/project/PATE/) metric · PyInstaller (packaged CLI)
 
 ## Run it yourself
 
@@ -102,13 +102,11 @@ git clone https://github.com/syrrex/Time_Series_Anomaly_Detection.git
 cd Time_Series_Anomaly_Detection
 pip install -r requirements.txt
 
-python train.py                 # fit the KNN model on X_train.csv -> knn_model.joblib, scaler.joblib
+python train.py                 # fit the final KNN model (window 250, k = 2, Manhattan) -> knn_model.joblib
 python main.py <your_series.csv> # score a new series -> predictions_group_18.csv (one score per time step)
 python parameter_optimization.py # grid search, plots + scores written to results/ (git-ignored)
 python experiments.py           # smoothing / sensitivity / ablation experiments
 ```
-
-> Note: `train.py` / `main.py` use the hand-in configuration (window 350, k = 3, threshold 2.5, moving-average smoothing). The poster's final configuration (window 250, k = 2, threshold 3.5, Gaussian σ = 75) is in `run_experiment_1` in `experiments.py`.
 
 ## Repository structure
 
